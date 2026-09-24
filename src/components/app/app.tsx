@@ -1,36 +1,121 @@
-import { AppHeader } from '@components';
-import { ConstructorPage } from '@pages';
+import { AppHeader, Modal, OrderInfo, IngredientDetails } from '@components';
+import {
+  ConstructorPage,
+  Feed,
+  Login,
+  Register,
+  ForgotPassword,
+  ResetPassword,
+  Profile,
+  ProfileOrders,
+  NotFound404,
+} from '@pages';
 import { Preloader } from '@ui';
-import { Routes, Route } from 'react-router-dom';
+import { useEffect } from 'react';
+import {
+  Navigate,
+  Outlet,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from 'react-router-dom';
+
+import {
+  fetchIngredients,
+  selectIngredients,
+  selectIngredientsError,
+  selectIngredientsLoading,
+} from '../../services/ingredientsSlice';
+import { useDispatch, useSelector } from '../../services/store';
+import { getCookie } from '../../utils/cookie';
 
 import type { AppContentProps } from './type';
-import type { TIngredient } from '@utils-types';
 
 import '../../index.css';
 
 import styles from './app.module.css';
 
 const App = (): React.JSX.Element => {
-  const ingredients: TIngredient[] = [];
-  const isIngredientsLoading = false;
-  const ingredientsError = null;
+  const dispatch = useDispatch();
+  const ingredients = useSelector(selectIngredients);
+  const isIngredientsLoading = useSelector(selectIngredientsLoading);
+  const ingredientsError = useSelector(selectIngredientsError);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    void dispatch(fetchIngredients());
+  }, [dispatch]);
+
+  const handleModalClose = (): void => {
+    void navigate(-1);
+  };
 
   return (
     <div className={styles.app}>
       <AppHeader />
-      <AppContent
-        ingredients={ingredients}
-        isLoading={isIngredientsLoading}
-        error={ingredientsError}
-      />
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <AppContent
+              ingredients={ingredients}
+              isLoading={isIngredientsLoading}
+              error={ingredientsError}
+            />
+          }
+        />
+        <Route path="/feed" element={<Feed />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route element={<ProtectedRoute />}>
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/profile/orders" element={<ProfileOrders />} />
+          <Route
+            path="/profile/orders/:number"
+            element={
+              <Modal title="Номер заказа (тест)" onClose={handleModalClose}>
+                <OrderInfo />
+              </Modal>
+            }
+          />
+        </Route>
+        <Route
+          path="/feed/:number"
+          element={
+            <Modal title="Номер заказа (тест)" onClose={handleModalClose}>
+              <OrderInfo />
+            </Modal>
+          }
+        />
+        <Route
+          path="/ingredients/:id"
+          element={
+            <Modal title="Детали ингредиента" onClose={handleModalClose}>
+              <IngredientDetails />
+            </Modal>
+          }
+        />
+        <Route path="*" element={<NotFound404 />} />
+      </Routes>
     </div>
   );
 };
 
 export default App;
 
-/* Маршруты показываются только когда ингредиенты загружены: без них не
-   отрисовать ни конструктор, ни состав заказа. */
+const ProtectedRoute = (): React.JSX.Element => {
+  const location = useLocation();
+
+  if (!getCookie('accessToken')) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  return <Outlet />;
+};
+
 const AppContent = ({
   ingredients,
   isLoading,
@@ -58,12 +143,4 @@ const AppContent = ({
   return <RouteComponent />;
 };
 
-const RouteComponent = (): React.JSX.Element => {
-  return (
-    <>
-      <Routes>
-        <Route path="/" element={<ConstructorPage />} />
-      </Routes>
-    </>
-  );
-};
+const RouteComponent = (): React.JSX.Element => <ConstructorPage />;
