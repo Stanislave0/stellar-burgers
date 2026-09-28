@@ -139,13 +139,18 @@ type TOrderResponse = TServerResponse<{
   orders: TOrder[];
 }>;
 
-export const getOrderByNumberApi = (number: number): Promise<TOrderResponse> =>
+export const getOrderByNumberApi = (number: number): Promise<TOrder> =>
   fetch(`${URL}/orders/${number}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
     },
-  }).then((res) => checkResponse<TOrderResponse>(res));
+  })
+    .then((res) => checkResponse<TOrderResponse>(res))
+    .then((data) => {
+      if (data.success && data.orders[0]) return data.orders[0];
+      return Promise.reject(toApiError(data));
+    });
 
 export type TRegisterData = {
   email: string;

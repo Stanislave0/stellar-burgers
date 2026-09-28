@@ -3,6 +3,7 @@ import { Button, Input } from '@krgaa/react-developer-burger-ui-components';
 
 import type { ProfileUIProps } from './type';
 
+import commonStyles from '../common.module.css';
 import styles from './profile.module.css';
 
 export const ProfileUI = ({
@@ -13,7 +14,7 @@ export const ProfileUI = ({
   handleCancel,
   handleInputChange,
 }: ProfileUIProps): React.JSX.Element => (
-  <main className={styles.container}>
+  <main className={commonStyles.container}>
     <div className={`mt-30 mr-15 ${styles.menu}`}>
       <ProfileMenu />
     </div>
