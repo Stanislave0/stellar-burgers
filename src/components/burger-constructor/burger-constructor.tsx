@@ -10,7 +10,7 @@ import {
   selectOrderLoading,
 } from '../../services/orderSlice';
 import { useDispatch, useSelector } from '../../services/store';
-import { getCookie } from '../../utils/cookie';
+import { selectIsAuthChecked, selectUser } from '../../services/userSlice';
 
 import type { TConstructorIngredient } from '@utils-types';
 
@@ -18,12 +18,14 @@ export const BurgerConstructor = (): React.JSX.Element | null => {
   const constructorItems = useSelector(selectConstructor);
   const orderRequest = useSelector(selectOrderLoading);
   const orderModalData = useSelector(selectOrder);
+  const user = useSelector(selectUser);
+  const isAuthChecked = useSelector(selectIsAuthChecked);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const onOrderClick = (): void => {
-    if (!constructorItems.bun || orderRequest) return;
-    if (!getCookie('accessToken')) {
+    if (!constructorItems.bun || orderRequest || !isAuthChecked) return;
+    if (!user) {
       void navigate('/login', { state: { from: { pathname: '/' } } });
       return;
     }
@@ -32,7 +34,11 @@ export const BurgerConstructor = (): React.JSX.Element | null => {
       ...constructorItems.ingredients.map((ingredient) => ingredient._id),
       constructorItems.bun._id,
     ];
-    void dispatch(createOrder(ingredients));
+    void dispatch(createOrder(ingredients)).then((action) => {
+      if (createOrder.fulfilled.match(action)) {
+        dispatch(clearConstructor());
+      }
+    });
   };
 
   const closeOrderModal = (): void => {

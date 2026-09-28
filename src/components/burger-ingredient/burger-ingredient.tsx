@@ -37,7 +37,7 @@ export const BurgerIngredient = memo(function BurgerIngredient({
     <BurgerIngredientUI
       ingredient={ingredient}
       count={count}
-      locationState={{ background: location }}
+      locationState={{ backgroundLocation: location }}
       handleAdd={handleAdd}
     />
   );

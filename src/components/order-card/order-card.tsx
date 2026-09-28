@@ -55,7 +55,7 @@ export const OrderCard = memo(function OrderCard({
     <OrderCardUI
       orderInfo={orderInfo}
       maxIngredients={maxIngredients}
-      locationState={{ background: location }}
+      locationState={{ backgroundLocation: location }}
     />
   );
 });

@@ -11,7 +11,7 @@ import {
   NotFound404,
 } from '@pages';
 import { Preloader } from '@ui';
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import {
   Navigate,
   Outlet,
@@ -19,6 +19,7 @@ import {
   Routes,
   useLocation,
   useNavigate,
+  useParams,
 } from 'react-router-dom';
 
 import {
@@ -28,9 +29,10 @@ import {
   selectIngredientsLoading,
 } from '../../services/ingredientsSlice';
 import { useDispatch, useSelector } from '../../services/store';
-import { getCookie } from '../../utils/cookie';
+import { getUser, selectIsAuthChecked, selectUser } from '../../services/userSlice';
 
 import type { AppContentProps } from './type';
+import type { Location } from 'react-router-dom';
 
 import '../../index.css';
 
@@ -41,10 +43,17 @@ const App = (): React.JSX.Element => {
   const ingredients = useSelector(selectIngredients);
   const isIngredientsLoading = useSelector(selectIngredientsLoading);
   const ingredientsError = useSelector(selectIngredientsError);
+  const location = useLocation();
   const navigate = useNavigate();
+  const backgroundLocation = (location.state as { backgroundLocation?: Location } | null)
+    ?.backgroundLocation;
 
   useEffect(() => {
     void dispatch(fetchIngredients());
+  }, [dispatch]);
+
+  useEffect(() => {
+    void dispatch(getUser());
   }, [dispatch]);
 
   const handleModalClose = (): void => {
@@ -54,7 +63,7 @@ const App = (): React.JSX.Element => {
   return (
     <div className={styles.app}>
       <AppHeader />
-      <Routes>
+      <Routes location={backgroundLocation ?? location}>
         <Route
           path="/"
           element={
@@ -66,54 +75,115 @@ const App = (): React.JSX.Element => {
           }
         />
         <Route path="/feed" element={<Feed />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route element={<ProtectedRoute />}>
+        <Route element={<AuthRoute onlyUnAuth />}>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+        </Route>
+        <Route element={<AuthRoute />}>
           <Route path="/profile" element={<Profile />} />
           <Route path="/profile/orders" element={<ProfileOrders />} />
           <Route
             path="/profile/orders/:number"
             element={
-              <Modal title="Номер заказа (тест)" onClose={handleModalClose}>
+              <DetailPage title="Детали заказа">
                 <OrderInfo />
-              </Modal>
+              </DetailPage>
             }
           />
         </Route>
         <Route
           path="/feed/:number"
           element={
-            <Modal title="Номер заказа (тест)" onClose={handleModalClose}>
+            <DetailPage title="Детали заказа">
               <OrderInfo />
-            </Modal>
+            </DetailPage>
           }
         />
         <Route
           path="/ingredients/:id"
           element={
-            <Modal title="Детали ингредиента" onClose={handleModalClose}>
+            <DetailPage title="Детали ингредиента">
               <IngredientDetails />
-            </Modal>
+            </DetailPage>
           }
         />
         <Route path="*" element={<NotFound404 />} />
       </Routes>
+      {backgroundLocation && (
+        <Routes>
+          <Route
+            path="/ingredients/:id"
+            element={
+              <Modal title="Детали ингредиента" onClose={handleModalClose}>
+                <IngredientDetails />
+              </Modal>
+            }
+          />
+          <Route
+            path="/feed/:number"
+            element={<OrderModal onClose={handleModalClose} />}
+          />
+          <Route element={<AuthRoute />}>
+            <Route
+              path="/profile/orders/:number"
+              element={<OrderModal onClose={handleModalClose} />}
+            />
+          </Route>
+        </Routes>
+      )}
     </div>
   );
 };
 
 export default App;
 
-const ProtectedRoute = (): React.JSX.Element => {
+const AuthRoute = ({
+  onlyUnAuth = false,
+}: {
+  onlyUnAuth?: boolean;
+}): React.JSX.Element => {
   const location = useLocation();
+  const isAuthChecked = useSelector(selectIsAuthChecked);
+  const user = useSelector(selectUser);
 
-  if (!getCookie('accessToken')) {
+  if (!isAuthChecked) {
+    return <Preloader />;
+  }
+
+  if (onlyUnAuth && user) {
+    return <Navigate to="/profile" replace />;
+  }
+
+  if (!onlyUnAuth && !user) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
   return <Outlet />;
+};
+
+const DetailPage = ({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}): React.JSX.Element => (
+  <main className={styles.detailPageWrap}>
+    <h2 className={`${styles.detailHeader} text text_type_main-large`}>{title}</h2>
+    {children}
+  </main>
+);
+
+const OrderModal = ({ onClose }: { onClose: () => void }): React.JSX.Element => {
+  const { number } = useParams();
+
+  return (
+    <Modal title={`Номер заказа ${number ?? ''}`} onClose={onClose}>
+      <OrderInfo />
+    </Modal>
+  );
 };
 
 const AppContent = ({

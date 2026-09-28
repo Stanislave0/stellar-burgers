@@ -1,22 +1,39 @@
 import { Preloader, OrderInfoUI } from '@ui';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { selectFeedOrders } from '../../services/feedSlice';
 import { selectIngredients } from '../../services/ingredientsSlice';
+import {
+  fetchOrderByNumber,
+  selectOrderDetails,
+  selectOrderDetailsError,
+  selectOrderDetailsNumber,
+} from '../../services/orderSlice';
 import { selectOrders } from '../../services/ordersSlice';
-import { useSelector } from '../../services/store';
+import { useDispatch, useSelector } from '../../services/store';
 
 import type { TIngredient } from '@utils-types';
 
 export const OrderInfo = (): React.JSX.Element => {
   const { number } = useParams();
+  const dispatch = useDispatch();
   const feedOrders = useSelector(selectFeedOrders);
   const profileOrders = useSelector(selectOrders);
   const ingredients = useSelector(selectIngredients);
-  const orderData = [...feedOrders, ...profileOrders].find(
-    (order) => order.number === Number(number)
-  );
+  const detailsOrder = useSelector(selectOrderDetails);
+  const detailsError = useSelector(selectOrderDetailsError);
+  const detailsNumber = useSelector(selectOrderDetailsNumber);
+  const orderNumber = Number(number);
+  const orderData =
+    [...feedOrders, ...profileOrders].find((order) => order.number === orderNumber) ??
+    (detailsOrder?.number === orderNumber ? detailsOrder : null);
+
+  useEffect(() => {
+    if (!Number.isSafeInteger(orderNumber) || orderData) return;
+
+    void dispatch(fetchOrderByNumber(orderNumber));
+  }, [dispatch, orderData, orderNumber]);
 
   /**
    * использование useMemo не обязательно
@@ -60,6 +77,19 @@ export const OrderInfo = (): React.JSX.Element => {
       total,
     };
   }, [orderData, ingredients]);
+
+  if (detailsError && detailsNumber === orderNumber) {
+    return (
+      <p role="alert" className="text text_type_main-medium">
+        Не удалось загрузить заказ
+        {detailsError.message ? `: ${detailsError.message}` : '.'}
+      </p>
+    );
+  }
+
+  if (!Number.isSafeInteger(orderNumber)) {
+    return <p className="text text_type_main-medium">Заказ не найден</p>;
+  }
 
   if (!orderInfo) {
     return <Preloader />;
