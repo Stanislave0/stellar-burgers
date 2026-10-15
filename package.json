@@ -22,6 +22,7 @@
     "test:storybook": "test-storybook",
     "storybook:test": "start-server-and-test storybook http://localhost:6006 test-storybook",
     "storybook": "storybook dev -p 6006",
+    "test:unit": "jest --runInBand",
     "build-storybook": "storybook build"
   },
   "dependencies": {
