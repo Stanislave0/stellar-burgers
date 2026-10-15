@@ -43,7 +43,7 @@ export const DefaultIngredient: Story = {
     },
     count: 2,
     locationState: {
-      background: {
+      backgroundLocation: {
         hash: '',
         key: 'eitkep27',
         pathname: '/',

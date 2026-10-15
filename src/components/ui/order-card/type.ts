@@ -4,7 +4,7 @@ import type { Location } from 'react-router-dom';
 export type OrderCardUIProps = {
   orderInfo: TOrderInfo;
   maxIngredients: number;
-  locationState: { background: Location };
+  locationState: { backgroundLocation: Location };
 };
 
 type TOrderInfo = {

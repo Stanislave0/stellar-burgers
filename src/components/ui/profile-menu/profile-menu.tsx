@@ -7,6 +7,7 @@ import styles from './profile-menu.module.css';
 export const ProfileMenuUI = ({
   pathname,
   handleLogout,
+  logoutError,
 }: ProfileMenuUIProps): React.JSX.Element => (
   <>
     <NavLink
@@ -36,6 +37,11 @@ export const ProfileMenuUI = ({
     >
       Выход
     </button>
+    {logoutError && (
+      <p role="alert" className="text text_type_main-default">
+        {logoutError}
+      </p>
+    )}
     <p className="pt-20 text text_type_main-default text_color_inactive">
       {pathname === '/profile'
         ? 'В этом разделе вы можете изменить свои персональные данные'
