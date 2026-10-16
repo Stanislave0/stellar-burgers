@@ -1,24 +1,5 @@
 import { expect, test } from '@playwright/test';
 
-const mockUser = {
-  email: 'test-user@example.com',
-  name: 'Тестовый пользователь',
-};
-
-const mockOrderResponse = {
-  success: true,
-  name: 'Краторный бургер',
-  order: {
-    _id: 'order-123',
-    status: 'done',
-    name: 'Краторный бургер',
-    createdAt: '2025-01-01T00:00:00.000Z',
-    updatedAt: '2025-01-01T00:00:00.000Z',
-    number: 12345,
-    ingredients: ['bun-1', 'main-1', 'bun-1'],
-  },
-};
-
 const ingredientCard = (page: Parameters<typeof test>[0]['page'], name: string) =>
   page.locator('li').filter({
     has: page.getByRole('link', { name: new RegExp(name, 'i') }),
@@ -39,41 +20,8 @@ test.describe('burger constructor', () => {
     });
 
     await page.routeFromHAR('tests/ingredients.har', {
-      url: '**/api/ingredients',
+      url: '**/api/**',
       notFound: 'abort',
-    });
-
-    await page.route('**/api/auth/user', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          success: true,
-          user: mockUser,
-        }),
-      });
-    });
-
-    await page.route('**/api/orders', async (route) => {
-      if (route.request().method() === 'POST') {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(mockOrderResponse),
-        });
-        return;
-      }
-
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          success: true,
-          orders: [],
-          total: 0,
-          totalToday: 0,
-        }),
-      });
     });
 
     await page.goto('/');
@@ -86,7 +34,9 @@ test.describe('burger constructor', () => {
 
     await expect(page.getByText('Краторная булка N-200i (верх)')).toBeVisible();
     const constructorIngredients = page.getByTestId('constructor-ingredients');
-    await expect(constructorIngredients.getByText('Биокотлета из марсианской Магнолии')).toBeVisible();
+    await expect(
+      constructorIngredients.getByText('Биокотлета из марсианской Магнолии')
+    ).toBeVisible();
     await expect(constructorIngredients.getByText('Соус Spicy-X')).toBeVisible();
   });
 
@@ -94,7 +44,9 @@ test.describe('burger constructor', () => {
     await page.getByRole('link', { name: /Краторная булка N-200i/i }).click();
 
     await expect(page).toHaveURL(/\/ingredients\/.+/);
-    await expect(page.getByText('Детали ингредиента')).toBeVisible();
+    const modal = page.getByTestId('modal-window');
+    await expect(modal.getByText('Детали ингредиента')).toBeVisible();
+    await expect(modal.getByText('Краторная булка N-200i')).toBeVisible();
     await expect(page.getByTestId('modal-overlay')).toBeVisible();
 
     await page.getByRole('button', { name: 'Закрыть' }).click();
